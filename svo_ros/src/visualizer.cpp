@@ -14,6 +14,7 @@
 
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/Vector3Stamped.h>
+#include <nav_msgs/Odometry.h>
 #include <sensor_msgs/image_encodings.h>
 #include <tf/tf.h>
 #include <ros/package.h>
@@ -173,6 +174,7 @@ Visualizer::Visualizer(const std::string& trace_dir,
   pub_points_ = pnh_.advertise<visualization_msgs::Marker>("points", 10000);
   pub_imu_pose_ =
       pnh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("pose_imu", 10);
+  pub_odom_ = pnh_.advertise<nav_msgs::Odometry>("odometry", 10);
   pub_info_ = pnh_.advertise<svo_msgs::Info>("info", 10);
   pub_markers_ = pnh_.advertise<visualization_msgs::Marker>("markers", 100);
   pub_pc_ = pnh_.advertise<PointCloud>("pointcloud", 1);
@@ -280,13 +282,14 @@ void Visualizer::publishCameraPoses(const FrameBundlePtr& frame_bundle,
 
   for (size_t i = 0; i < frame_bundle->size(); ++i)
   {
-    if (pub_cam_poses_.at(i).getNumSubscribers() == 0)
-      return;
+    // if (pub_cam_poses_.at(i).getNumSubscribers() == 0)
+    //   return;
     VLOG(100) << "Publish camera pose " << i;
 
     Eigen::Quaterniond q =
         frame_bundle->at(i)->T_world_cam().getRotation().toImplementation();
     Eigen::Vector3d p = frame_bundle->at(i)->T_world_cam().getPosition();
+    nav_msgs::OdometryPtr msg_odom(new nav_msgs::Odometry);
     geometry_msgs::PoseStampedPtr msg_pose(new geometry_msgs::PoseStamped);
     msg_pose->header.seq = trace_id_;
     msg_pose->header.stamp = ros::Time().fromNSec(timestamp_nanoseconds);
@@ -298,7 +301,19 @@ void Visualizer::publishCameraPoses(const FrameBundlePtr& frame_bundle,
     msg_pose->pose.orientation.y = q.y();
     msg_pose->pose.orientation.z = q.z();
     msg_pose->pose.orientation.w = q.w();
+
+    msg_odom->header.seq = trace_id_;
+    msg_odom->header.stamp = ros::Time().fromNSec(timestamp_nanoseconds);
+    msg_odom->pose.pose.position.x = p[0];
+    msg_odom->pose.pose.position.y = p[1];
+    msg_odom->pose.pose.position.z = p[2];
+    msg_odom->pose.pose.orientation.x = q.x();
+    msg_odom->pose.pose.orientation.y = q.y();
+    msg_odom->pose.pose.orientation.z = q.z();
+    msg_odom->pose.pose.orientation.w = q.w();
+
     pub_cam_poses_.at(i).publish(msg_pose);
+    pub_odom_.publish(msg_odom);
   }
 }
 

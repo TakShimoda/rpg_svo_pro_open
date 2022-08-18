@@ -65,6 +65,7 @@ public:
   ros::Publisher pub_frames_;
   ros::Publisher pub_points_;
   ros::Publisher pub_imu_pose_;
+  ros::Publisher pub_odom_;
   ros::Publisher pub_info_;
   ros::Publisher pub_markers_;
   ros::Publisher pub_pc_;
